@@ -23,6 +23,8 @@ if (app.Environment.IsDevelopment())
 }
 
 //app.UseHttpsRedirection();
-
+//Map end points for Todos and Posts.
 app.MapTodosEndPoints();
+app.MapPostsEndPoints();
+
 app.Run();
