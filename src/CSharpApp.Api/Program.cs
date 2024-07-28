@@ -1,3 +1,5 @@
+using CSharpApp.Api.Endpoints;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog(new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger());
@@ -22,20 +24,5 @@ if (app.Environment.IsDevelopment())
 
 //app.UseHttpsRedirection();
 
-app.MapGet("/todos", async (ITodoService todoService) =>
-    {
-        var todos = await todoService.GetAllTodos();
-        return todos;
-    })
-    .WithName("GetTodos")
-    .WithOpenApi();
-
-app.MapGet("/todos/{id}", async ([FromRoute] int id, ITodoService todoService) =>
-    {
-        var todos = await todoService.GetTodoById(id);
-        return todos;
-    })
-    .WithName("GetTodosById")
-    .WithOpenApi();
-
+app.MapTodosEndPoints();
 app.Run();
