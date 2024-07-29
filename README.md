@@ -23,8 +23,8 @@ To resolve this issue, you must set the BaseAddress when the HttpClient is insta
 
 Τhere is one or more problems/bugs that exist! It would be great if you catch them and attempt to fix.
 
-1. GetTodoById lets you enter an invalid ID and throws a 404 not found exception. To get around this we check if the reponse if successful, otherwise we return a null record.
-2. Now we will return a null record if anything is returned other than a successful response.
+1. GetTodoById lets you enter an invalid ID and throws a 404 not found exception. Now when we issue a Get and it fails we will log the exception and endpoint. We will then return a Status404NotFound.
+2. Fixed bug where you can issue a BadHttpRequest by entering values greater than Int32.MaxVal. Now we setup the max value you can enter to be int.MaxValue to prevent this error.
 
 ## New features
 
@@ -48,3 +48,5 @@ The following verbs must be supported:
 - [x] Post
 - [x] Put
 - [x] Delete
+
+Added all of the HttpClientWrapper functionality to both PostService and TodoService through a dependency injection.
