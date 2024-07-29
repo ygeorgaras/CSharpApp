@@ -44,7 +44,7 @@ The following must be supported:
 Create a generic http client wrapper handling all types of requests.
 
 The following verbs must be supported:
-- Get
-- Post
-- Put
-- Delete
+- [x] Get
+- [x] Post
+- [x] Put
+- [x] Delete
