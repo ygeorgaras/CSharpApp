@@ -24,7 +24,7 @@ public class HttpClientWrapper
     /// </summary>
     /// <param name="id">ID we are searching for.</param>
     /// <returns>Existing record or null if record doesn't exist.</returns>
-    public async Task<T> GetAsync<T>(string endpoint)
+    public async Task<T?> GetAsync<T>(string endpoint)
     {
         try
         {
@@ -51,6 +51,14 @@ public class HttpClientWrapper
         if (response.IsSuccessStatusCode)
         {
             var records = await response.Content.ReadFromJsonAsync<List<T>>();
+
+            // Check if records is null and return an empty list if it is
+            if (records == null)
+            {
+                _logger.LogWarning($"No records were returned from {endpoint}.");
+                return new ReadOnlyCollection<T>(new List<T>());
+            }
+
             return new ReadOnlyCollection<T>(records);
         }
 
@@ -97,6 +105,7 @@ public class HttpClientWrapper
         }
         else
         {
+            _logger.LogError($"Unable to replace record with ID:{id}");
             return default(TResponse?);
         }
     }

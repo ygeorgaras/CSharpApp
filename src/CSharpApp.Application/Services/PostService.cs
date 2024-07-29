@@ -1,4 +1,5 @@
 ﻿using CSharpApp.Core.Dtos;
+using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
 
@@ -15,13 +16,6 @@ public class PostService : IPostService
     {
         _logger = logger;
         _httpClientWrapper = httpClientWrapper;
-    }
-
-    private static bool ValidatePost(PostRecord postRecord)
-    {
-        return !string.IsNullOrWhiteSpace(postRecord.Title)
-            && !string.IsNullOrWhiteSpace(postRecord.Body)
-            && postRecord.UserId >= 1;
     }
 
     public async Task<PostRecord?> GetPostById(int id)
@@ -45,8 +39,8 @@ public class PostService : IPostService
         }
         catch (InvalidOperationException ex)
         {
-            //_logger.LogError(ex, "Failed to get Todo by ID.");
-            return default;
+            _logger.LogError(ex, "Failed to get list of all Todo records.");
+            return new ReadOnlyCollection<PostRecord>(new List<PostRecord>());
         }
     }
 
@@ -57,19 +51,11 @@ public class PostService : IPostService
     /// <param name="title">New title to use.</param>
     /// <param name="body">New body to use.</param>
     /// <returns>Returns the new record along with the new ID.</returns>
-    public async Task<PostRecord?> AddPostRecord(int userId, string title, string body)
+    public async Task<PostRecord?> AddPostRecord(PostRecord newRecord)
     {
-        var record = new PostRecord(userId, 0, title, body);
-
-        //Checks if input is valid.
-        if (!ValidatePost(record))
-        {
-            return default;
-        }
-
         try
         {
-            return await _httpClientWrapper.PostAsync<PostRecord, PostRecord>($"{POSTS_ENDPOINT}", record);
+            return await _httpClientWrapper.PostAsync<PostRecord, PostRecord>($"{POSTS_ENDPOINT}", newRecord);
         }
         catch (Exception ex)
         {
@@ -86,17 +72,25 @@ public class PostService : IPostService
     public async Task<HttpStatusCode> DeletePostById(int id)
     {
         return await _httpClientWrapper.DeleteByIdAsync($"{POSTS_ENDPOINT}", id);
-    }
+     }
 
-    public async Task<PostRecord> PutById(int userId, string title, string body, int id)
+    /// <summary>
+    /// This will overwrite an existing record in the todo endpoint.
+    /// </summary>
+    /// <param name="newRecord">New record we want to use to overwrite the old one.</param>
+    /// <returns>Returns the new record entered.</returns>
+    public async Task<PostRecord?> PutPostById(PostRecord newRecord)
     {
-        PostRecord record = new PostRecord(userId, id, title, body);
-        //Checks if input is valid.
-        if (!ValidatePost(record))
+        try
         {
-            //TODO: Handle invalid post
-            return default;
+            var response = await _httpClientWrapper.PutAsync<PostRecord, PostRecord>(POSTS_ENDPOINT, newRecord, newRecord.Id);
+
+            return response;
         }
-        return await _httpClientWrapper.PutAsync<PostRecord, PostRecord>(POSTS_ENDPOINT, record, id);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to put new post");
+            return null;
+        }
     }
 }
