@@ -17,16 +17,28 @@ public static class TodosEndpoints
             .Produces<TodoRecord>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .WithName("GetTodos")
+            .WithSummary("Get all todos.")
             .WithOpenApi();
 
         app.MapGet("/todos/{id}", async ([FromRoute] int id, ITodoService todoService) =>
         {
             var todos = await todoService.GetTodoById(id);
-            return todos;
+            
+            if(todos == null)
+            {
+               return Results.NotFound(todos);
+            }
+
+            return Results.Ok(todos);
         })
             .Produces<TodoRecord>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .WithName("GetTodosById")
-            .WithOpenApi();
+            .WithOpenApi(info =>
+            {
+                info.Summary = "Get todo by ID.";
+                info.Parameters[0].Description = "Input valid ID greater than 0.";
+                return info;
+            });
     }
 }

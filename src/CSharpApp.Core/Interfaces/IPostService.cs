@@ -16,4 +16,5 @@ public interface IPostService
     Task<ReadOnlyCollection<PostRecord>> GetAllPosts();
     Task<PostRecord?> AddPostRecord(int userId, string title, string body);
     Task<HttpStatusCode> DeletePostById(int id);
+    Task<PostRecord> PutById(int userId, string title, string body, int id);
 }

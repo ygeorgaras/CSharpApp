@@ -6,16 +6,15 @@ namespace CSharpApp.Application.Services;
 public class PostService : IPostService
 {
     private readonly ILogger<PostService> _logger;
-    private readonly HttpClient _client;
-    private readonly string? _baseUrl;
+    private readonly HttpClientWrapper _httpClientWrapper;
+
+    private const string POSTS_ENDPOINT = "/posts";
 
     public PostService(ILogger<PostService> logger,
-    IConfiguration configuration)
+    HttpClientWrapper httpClientWrapper)
     {
         _logger = logger;
-        _client = new HttpClient();
-        _baseUrl = configuration["BaseUrl"];
-        _client.BaseAddress = new Uri(_baseUrl!);
+        _httpClientWrapper = httpClientWrapper;
     }
 
     private static bool ValidatePost(PostRecord postRecord)
@@ -25,46 +24,38 @@ public class PostService : IPostService
             && postRecord.UserId >= 1;
     }
 
-    /// <summary>
-    /// This method will try to retrieve a Post record if it exists.
-    /// </summary>
-    /// <param name="id">ID we are searching for.</param>
-    /// <returns>Existing TodoRecord or null if record doesn't exist.</returns>
     public async Task<PostRecord?> GetPostById(int id)
     {
-        var response = await _client.GetAsync($"posts/{id}");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var postRecord = await response.Content.ReadFromJsonAsync<PostRecord>();
-            return postRecord;
+            return await _httpClientWrapper.GetAsync<PostRecord>($"{POSTS_ENDPOINT}/{id}");
         }
-        //TODO: Handle invalid ID.
-        return null;
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, $"Failed to get Todo from posts/{id}.");
+            return null;
+        }
     }
 
-    /// <summary>
-    /// This method will get a list of all Post records existing.
-    /// </summary>
-    /// <returns>All Post records. Or a null list if it cannot find any records.</returns>
     public async Task<ReadOnlyCollection<PostRecord>> GetAllPosts()
     {
-        var response = await _client.GetAsync($"posts");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var postRecord = await response.Content.ReadFromJsonAsync<List<PostRecord>>();
-            return new ReadOnlyCollection<PostRecord>(postRecord!);
+            return await _httpClientWrapper.GetAllAsync<PostRecord>($"{POSTS_ENDPOINT}/");
         }
-
-        //TODO: Handle any other results.
-        return new ReadOnlyCollection<PostRecord>(new List<PostRecord>());
+        catch (InvalidOperationException ex)
+        {
+            //_logger.LogError(ex, "Failed to get Todo by ID.");
+            return default;
+        }
     }
 
     /// <summary>
-    /// Adds a new Post Record.
+    /// Checks if the record is valid and then trys posting the record from the HttpClientWrapper.
     /// </summary>
-    /// <param name="userId"></param>
-    /// <param name="title"></param>
-    /// <param name="body"></param>
+    /// <param name="userId">New userId we want to assign.</param>
+    /// <param name="title">New title to use.</param>
+    /// <param name="body">New body to use.</param>
     /// <returns>Returns the new record along with the new ID.</returns>
     public async Task<PostRecord?> AddPostRecord(int userId, string title, string body)
     {
@@ -73,20 +64,16 @@ public class PostService : IPostService
         //Checks if input is valid.
         if (!ValidatePost(record))
         {
-            //TODO: Handle invalid post
-            return null;
+            return default;
         }
 
-        var response = await _client.PostAsJsonAsync<PostRecord>($"posts", record);
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var postRecord = await response.Content.ReadFromJsonAsync<PostRecord>();
-            return postRecord;
+            return await _httpClientWrapper.PostAsync<PostRecord, PostRecord>($"{POSTS_ENDPOINT}", record);
         }
-        else
+        catch (Exception ex)
         {
-            //TODO: Handle error response appropriately.
+            _logger.LogError(ex, "Failed to create new Post.");
             return null;
         }
     }
@@ -94,21 +81,22 @@ public class PostService : IPostService
     /// <summary>
     /// This will search using the input ID if the record exists. If it exists then it will issue a Delete to the API.
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns>The Status Code we receive from the API.</returns>
+    /// <param name="id">ID we wish to delete.</param>
+    /// <returns>The HTTP Status Code we receive from the API.</returns>
     public async Task<HttpStatusCode> DeletePostById(int id)
     {
-        var response = await _client.GetAsync($"posts/{id}");
+        return await _httpClientWrapper.DeleteByIdAsync($"{POSTS_ENDPOINT}", id);
+    }
 
-        if (response.IsSuccessStatusCode)
+    public async Task<PostRecord> PutById(int userId, string title, string body, int id)
+    {
+        PostRecord record = new PostRecord(userId, id, title, body);
+        //Checks if input is valid.
+        if (!ValidatePost(record))
         {
-            var deleteResponse = await _client.DeleteAsync($"posts/{id}");
-            return deleteResponse.StatusCode;
+            //TODO: Handle invalid post
+            return default;
         }
-        else
-        {
-            //TODO: Handle error response appropriately, e.g., logging or throwing an exception
-        }
-        return response.StatusCode;
+        return await _httpClientWrapper.PutAsync<PostRecord, PostRecord>(POSTS_ENDPOINT, record, id);
     }
 }

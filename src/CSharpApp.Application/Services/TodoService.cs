@@ -3,51 +3,40 @@ namespace CSharpApp.Application.Services;
 public class TodoService : ITodoService
 {
     private readonly ILogger<TodoService> _logger;
-    private readonly HttpClient _client;
+    private readonly HttpClientWrapper _httpClientWrapper;
 
-    private readonly string? _baseUrl;
+    private const string TODO_ENDPOINT = "/todos";
 
     public TodoService(ILogger<TodoService> logger, 
-        IConfiguration configuration)
+        HttpClientWrapper httpClientWrapper)
     {
         _logger = logger;
-        _client = new HttpClient();
-        _baseUrl = configuration["BaseUrl"];
-        _client.BaseAddress = new Uri(_baseUrl!);
+        _httpClientWrapper = httpClientWrapper;
     }
 
-    /// <summary>
-    /// This method will try to retrieve a Todo record if it exists.
-    /// </summary>
-    /// <param name="id">ID we are searching for.</param>
-    /// <returns>Existing TodoRecord or null if record doesn't exist.</returns>
     public async Task<TodoRecord?> GetTodoById(int id)
     {
-        var response = await _client.GetAsync($"todos/{id}");
-
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var todoRecord = await response.Content.ReadFromJsonAsync<TodoRecord>();
-
-            return todoRecord;
+            return await _httpClientWrapper.GetAsync<TodoRecord>($"{TODO_ENDPOINT}/{id}");
         }
-
-        return null;
+        catch (Exception e)
+        {
+            _logger.LogError(e, $"Failed to get Todo by ID: {id}.");
+            return null;
+        }
     }
 
-    /// <summary>
-    /// This method will get a list of all Todo records existing.
-    /// </summary>
-    /// <returns>All Todo records. Or a null list if it cannot find any records.</returns>
     public async Task<ReadOnlyCollection<TodoRecord>> GetAllTodos()
     {
-        var response = await _client.GetAsync($"todos");
-        if (response.IsSuccessStatusCode)
+        try
         {
-            var todoRecord = await response.Content.ReadFromJsonAsync<List<TodoRecord>>();
-
-            return new ReadOnlyCollection<TodoRecord>(todoRecord!);
+            return await _httpClientWrapper.GetAllAsync<TodoRecord>($"{TODO_ENDPOINT}/");
         }
-        return new ReadOnlyCollection<TodoRecord>(new List<TodoRecord>());
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get list of all Todo records.");
+            return new ReadOnlyCollection<TodoRecord>(new List<TodoRecord>());
+        }
     }
 }
