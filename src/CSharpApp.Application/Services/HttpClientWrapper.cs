@@ -71,7 +71,7 @@ public class HttpClientWrapper
     /// </summary>
     /// <param name="endpoint">Endpoint to add the record to.</param>
     /// <param name="record">New record we want to add.</param>
-    /// <returns></returns>
+    /// <returns>Returns the new record along with the new ID.</returns>
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string endpoint, TRequest record)
     {
         var response = await _httpClient.PostAsJsonAsync(endpoint, record);
@@ -93,7 +93,7 @@ public class HttpClientWrapper
     /// <param name="endpoint">Endpoint to edit the record to.</param>
     /// <param name="record">New record we want to use to overwrite existing record.</param>
     /// <param name="id">Id of the record we want to edit.</param>
-    /// <returns></returns>
+    /// <returns>Returns the new record entered.</returns>
     public async Task<TResponse?> PutAsync<TRequest, TResponse>(string endpoint, TRequest record, int id)
     {
         var result = await _httpClient.GetAsync($"{endpoint}/{id}");
@@ -114,7 +114,7 @@ public class HttpClientWrapper
     /// </summary>
     /// <param name="endpoint"></param>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <returns>Returns the HTTP Status Code we receive from the API.</returns>
     public async Task<HttpStatusCode> DeleteByIdAsync(string endpoint, int id)
     {
         var response = await _httpClient.GetAsync($"{endpoint}/{id}");
