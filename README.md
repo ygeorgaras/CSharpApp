@@ -17,7 +17,7 @@ Seems that there is a problem in the current implementation of HttpClient that n
 Resolution:
 The issue here is that we are setting the BaseAddress on each call to a method in the service. You can only modify the HttpClient properties before you send the first request. This is why it works the first time but fails on the next call.
 
-To resolve this issue, you must set the BaseAddress when the HttpClient is instantiated during the TodoService constructor.
+To resolve this issue, on startup we instatiate the HttpClient during startup and use a dependency injection into the HttpClientWrapper to ensure that the correct HttpClient is being used.
 
 **#2**
 
